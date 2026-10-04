@@ -58,7 +58,7 @@ fun BattleScreen(onMenu: () -> Unit) {
     Column(Modifier.fillMaxSize().background(Pal.Bg)) {
         HudBar(engine)
         Box(Modifier.weight(1f)) {
-            GameCanvas(engine) { x, y -> tapGame(engine, x, y) }
+            GameCanvas(engine, onTap = { x, y -> tapGame(engine, x, y) })
             if (engine.betweenWaves()) {
                 Text(
                     "Wave ${engine.wave + 1} in ${(engine.waveGap + 0.999f).toInt()}s",
