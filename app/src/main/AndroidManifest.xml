@@ -4,7 +4,7 @@
         android:allowBackup="true"
         android:icon="@drawable/ic_launcher"
         android:label="Mini Defense"
-        android:theme="@android:style/Theme.Material.Light.NoTitleBar">
+        android:theme="@android:style/Theme.Material.Light.NoActionBar">
         <activity
             android:name=".MainActivity"
             android:exported="true"
