@@ -2,18 +2,20 @@ package com.example.minidefense
 
 import kotlin.math.sqrt
 
-class GameEngine {
+class GameEngine(val levelIdx: Int = 0) {
+    val level = Levels.ALL[levelIdx]
     var lives = 10
     var coins = 120
     var wave = 0
     val totalWaves = 10
     var paused = false
     var speed = 1
-    var status = 0            // 0 playing, 1 won, 2 lost
+    var status = 0
     var waveGap = 2.5f
     var time = 0f
     var selectedSpot = -1
     var placing: TowerType? = null
+    var onSfx: (String) -> Unit = {}
     val towers = mutableListOf<Tower>()
     val enemies = mutableListOf<Enemy>()
     val shots = mutableListOf<Projectile>()
@@ -27,25 +29,32 @@ class GameEngine {
         val dt = dtRaw * speed
         time += dt
         if (queue.isEmpty() && enemies.isEmpty()) {
-            if (wave >= totalWaves) { status = 1; return }
+            if (wave >= totalWaves) {
+                status = 1
+                val stars = if (lives >= 10) 3 else if (lives >= 6) 2 else 1
+                Save.win(levelIdx, stars)
+                onSfx("win")
+                return
+            }
             waveGap -= dt
             if (waveGap <= 0) startWave(wave + 1)
         }
         while (queue.isNotEmpty() && queue[0].first <= time) {
             val kind = queue.removeAt(0).second
-            enemies.add(Enemy(kind, Enemy.BASE_HP[kind] * (1f + 0.18f * (wave - 1))))
+            enemies.add(Enemy(kind, Enemy.BASE_HP[kind] * level.diff * (1f + 0.18f * (wave - 1))))
         }
         val it = enemies.iterator()
         while (it.hasNext()) {
             val e = it.next()
             e.slow = maxOf(0f, e.slow - dt)
             e.dist += e.speed * dt
-            if (e.dist >= MapData.TOTAL) {
+            if (e.dist >= level.total) {
                 it.remove(); lives--
-                if (lives <= 0) status = 2
+                onSfx("leak")
+                if (lives <= 0) { status = 2; onSfx("lose") }
                 continue
             }
-            val p = MapData.pointAt(e.dist)
+            val p = level.pointAt(e.dist)
             e.x = p.first; e.y = p.second
         }
         for (t in towers) {
@@ -55,6 +64,7 @@ class GameEngine {
                 if (target != null) {
                     shots.add(Projectile(target, t))
                     t.cooldown = 1f / t.type.rate
+                    onSfx("shoot")
                 }
             }
         }
@@ -90,6 +100,7 @@ class GameEngine {
             enemies.remove(e)
             coins += e.reward
             pops.add(Pop(e.x, e.y, 0.3f))
+            onSfx("pop")
         }
     }
 
@@ -108,6 +119,7 @@ class GameEngine {
             queue.add(t to kind)
             t += 0.75f
         }
+        onSfx("wave")
     }
 
     fun callNextWave(): Boolean {
@@ -119,9 +131,10 @@ class GameEngine {
 
     fun place(spot: Int, type: TowerType): Boolean {
         if (coins < type.cost || towers.any { it.spot == spot }) return false
-        val s = MapData.SPOTS[spot]
+        val s = level.spots[spot]
         towers.add(Tower(type, s.first, s.second, spot))
         coins -= type.cost
+        onSfx("place")
         return true
     }
 
@@ -129,13 +142,14 @@ class GameEngine {
 
     fun upgrade(t: Tower) {
         val c = t.upgradeCost
-        if (coins >= c) { coins -= c; t.level++; t.invested += c }
+        if (coins >= c) { coins -= c; t.level++; t.invested += c; onSfx("place") }
     }
 
     fun sell(t: Tower) {
         coins += t.sellValue
         towers.remove(t)
         selectedSpot = -1
+        onSfx("pop")
     }
 
     private fun hyp(a: Float, b: Float) = sqrt(a * a + b * b)

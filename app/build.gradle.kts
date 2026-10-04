@@ -12,14 +12,29 @@ android {
         applicationId = "com.example.minidefense"
         minSdk = 24
         targetSdk = 34
-        versionCode = 1
-        versionName = "0.1.0"
+        versionCode = 3
+        versionName = "0.3.0"
+    }
+
+    signingConfigs {
+        create("releaseCfg") {
+            val ks = rootProject.file("release.keystore")
+            if (ks.exists()) {
+                storeFile = ks
+                storePassword = System.getenv("KS_PASS") ?: "minipass"
+                keyAlias = System.getenv("KS_ALIAS") ?: "mini"
+                keyPassword = System.getenv("KS_PASS") ?: "minipass"
+            }
+        }
     }
 
     buildTypes {
         release {
-            isMinifyEnabled = true
-            proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
+            isMinifyEnabled = false
+            signingConfig = if (rootProject.file("release.keystore").exists())
+                signingConfigs.getByName("releaseCfg")
+            else
+                signingConfigs.getByName("debug")
         }
     }
 

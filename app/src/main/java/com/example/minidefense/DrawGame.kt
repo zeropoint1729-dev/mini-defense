@@ -54,18 +54,18 @@ fun GameCanvas(engine: GameEngine, onTap: (Float, Float) -> Unit, modifier: Modi
             }
         }
         val p = Path()
-        MapData.PATH.forEachIndexed { i, pt ->
+        engine.level.path.forEachIndexed { i, pt ->
             if (i == 0) p.moveTo(px(pt.first), py(pt.second)) else p.lineTo(px(pt.first), py(pt.second))
         }
         drawPath(p, Pal.TanDark, style = Stroke(0.13f * sc, cap = StrokeCap.Round, join = StrokeJoin.Round))
         drawPath(p, Pal.Sand, style = Stroke(0.10f * sc, cap = StrokeCap.Round, join = StrokeJoin.Round))
         drawPath(p, Pal.TanDark, style = Stroke(0.008f * sc, pathEffect = PathEffect.dashPathEffect(floatArrayOf(0.02f * sc, 0.06f * sc), 0f)))
-        drawCircle(Pal.HudBrown, radius = 0.075f * sc, center = Offset(px(0.5f), py(-0.02f)))
-        drawCircle(Pal.Ink, radius = 0.05f * sc, center = Offset(px(0.5f), py(-0.02f)))
-        cartoonCastle(this, px(0.40f), py(1.00f), sc * 1.25f, Pal.Tan, Pal.Roof, false)
-        drawHeart(this, px(0.40f), py(0.84f), 0.016f * sc, Pal.Danger)
+        drawCircle(Pal.HudBrown, radius = 0.075f * sc, center = Offset(px(engine.level.path[0].first), py(engine.level.path[0].second)))
+        drawCircle(Pal.Ink, radius = 0.05f * sc, center = Offset(px(engine.level.path[0].first), py(engine.level.path[0].second)))
+        cartoonCastle(this, px(engine.level.base.first), py(engine.level.base.second), sc * 1.25f, Pal.Tan, Pal.Roof, false)
+        drawHeart(this, px(engine.level.base.first), py(engine.level.base.second - 0.16f), 0.016f * sc, Pal.Danger)
 
-        MapData.SPOTS.forEachIndexed { i, s ->
+        engine.level.spots.forEachIndexed { i, s ->
             if (engine.towerAt(i) == null) {
                 drawCircle(
                     Color.White.copy(alpha = 0.6f), radius = 0.055f * sc,

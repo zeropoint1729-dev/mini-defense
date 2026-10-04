@@ -38,10 +38,11 @@ import kotlinx.coroutines.delay
 import kotlin.math.hypot
 
 @Composable
-fun BattleScreen(onMenu: () -> Unit) {
-    var engine by remember { mutableStateOf(GameEngine()) }
+fun BattleScreen(levelIdx: Int, onMenu: () -> Unit) {
+    var engine by remember { mutableStateOf(GameEngine(levelIdx)) }
     var frame by remember { mutableStateOf(0) }
     LaunchedEffect(engine) {
+        engine.onSfx = { name -> if (Save.sound) Sfx.play(name) }
         var last = System.nanoTime()
         while (true) {
             delay(16)
@@ -68,17 +69,17 @@ fun BattleScreen(onMenu: () -> Unit) {
             if (engine.paused && engine.status == 0) OverlayCard("Paused") {
                 CartoonButton("Resume") { engine.paused = false }
                 Spacer(Modifier.height(8.dp))
-                CartoonButton("Restart") { engine = GameEngine() }
+                CartoonButton("Restart") { engine = GameEngine(levelIdx) }
                 Spacer(Modifier.height(8.dp))
                 CartoonButton("Menu") { onMenu() }
             }
-            if (engine.status == 1) OverlayCard("Victory!") {
-                CartoonButton("Play Again") { engine = GameEngine() }
+            if (engine.status == 1) OverlayCard("Victory! ${"★".repeat(if (engine.lives >= 10) 3 else if (engine.lives >= 6) 2 else 1)}") {
+                CartoonButton("Next Level") { onMenu() }
                 Spacer(Modifier.height(8.dp))
-                CartoonButton("Menu") { onMenu() }
+                CartoonButton("Play Again") { engine = GameEngine(levelIdx) }
             }
             if (engine.status == 2) OverlayCard("Defeat") {
-                CartoonButton("Retry") { engine = GameEngine() }
+                CartoonButton("Retry") { engine = GameEngine(levelIdx) }
                 Spacer(Modifier.height(8.dp))
                 CartoonButton("Menu") { onMenu() }
             }
@@ -90,7 +91,7 @@ fun BattleScreen(onMenu: () -> Unit) {
 
 fun tapGame(e: GameEngine, x: Float, y: Float) {
     if (e.paused || e.status != 0) return
-    val i = MapData.SPOTS.indices.firstOrNull { hypot(MapData.SPOTS[it].first - x, MapData.SPOTS[it].second - y) < 0.075f }
+    val i = e.level.spots.indices.firstOrNull { hypot(e.level.spots[it].first - x, e.level.spots[it].second - y) < 0.075f }
     if (i == null) { e.selectedSpot = -1; return }
     val t = e.towerAt(i)
     if (t != null) { e.selectedSpot = if (e.selectedSpot == i) -1 else i; e.placing = null }
@@ -114,7 +115,10 @@ fun HudBar(e: GameEngine) {
             Text("${e.coins}", color = Pal.White, fontWeight = FontWeight.ExtraBold, fontSize = 15.sp)
         }
         Spacer(Modifier.weight(1f))
-        Text("Wave ${e.wave}/${e.totalWaves}", color = Pal.HudBrown, fontWeight = FontWeight.ExtraBold, fontSize = 16.sp)
+        Text("L${e.levelIdx + 1}", color = Pal.White, fontWeight = FontWeight.ExtraBold, fontSize = 14.sp,
+            modifier = Modifier.background(Pal.HudBrown, RoundedCornerShape(8.dp)).padding(horizontal = 6.dp, vertical = 2.dp))
+        Spacer(Modifier.width(6.dp))
+        Text("Wave ${e.wave}/${e.totalWaves}", color = Pal.HudBrown, fontWeight = FontWeight.ExtraBold, fontSize = 15.sp)
         Spacer(Modifier.width(8.dp))
         CircleButton(onClick = { e.paused = !e.paused }) {
             Text(if (e.paused) "▶" else "❚❚", color = Pal.HudBrown, fontSize = 12.sp, fontWeight = FontWeight.ExtraBold)
@@ -250,7 +254,7 @@ fun OverlayCard(title: String, content: @Composable ColumnScope.() -> Unit) {
             Modifier.background(Pal.Bg, RoundedCornerShape(28.dp)).border(3.dp, Pal.Outline, RoundedCornerShape(28.dp)).padding(24.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            Text(title, fontSize = 28.sp, fontWeight = FontWeight.ExtraBold, color = Pal.HudBrown)
+            Text(title, fontSize = 26.sp, fontWeight = FontWeight.ExtraBold, color = Pal.HudBrown)
             Spacer(Modifier.height(14.dp))
             content()
         }

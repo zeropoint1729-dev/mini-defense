@@ -2,7 +2,6 @@ package com.example.minidefense
 
 import android.app.Activity
 import android.content.Context
-import android.widget.Toast
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -31,7 +30,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 
 @Composable
-fun MenuScreen(onPlay: () -> Unit) {
+fun MenuScreen(onPlay: () -> Unit, onLevels: () -> Unit, onSettings: () -> Unit) {
     val ctx = LocalContext.current
     Column(
         Modifier.fillMaxSize().background(Pal.Bg),
@@ -50,19 +49,13 @@ fun MenuScreen(onPlay: () -> Unit) {
         )
         Spacer(Modifier.height(32.dp))
         Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-            ChunkyButton("PLAY", Color(0xFFF9D65C), Color(0xFFB98A2E)) { onPlay() }
-            ChunkyButton("LEVELS", Color(0xFFF4A259), Color(0xFFB96A35)) {
-                Toast.makeText(ctx, "Level select comes in Step 3!", Toast.LENGTH_SHORT).show()
-            }
+            ChunkyButton("PLAY", Color(0xFFF9D65C), Color(0xFFB98A2E), onPlay)
+            ChunkyButton("LEVELS", Color(0xFFF4A259), Color(0xFFB96A35), onLevels)
         }
         Spacer(Modifier.height(12.dp))
         Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-            ChunkyButton("SETTINGS", Color(0xFF94C973), Color(0xFF5E8C4A)) {
-                Toast.makeText(ctx, "Settings come in Step 3!", Toast.LENGTH_SHORT).show()
-            }
-            ChunkyButton("EXIT", Color(0xFF8ECDE8), Color(0xFF5E93B0)) {
-                (ctx as? Activity)?.finish()
-            }
+            ChunkyButton(if (Save.sound) "SOUND ON" else "SOUND OFF", Color(0xFF94C973), Color(0xFF5E8C4A), onSettings)
+            ChunkyButton("EXIT", Color(0xFF8ECDE8), Color(0xFF5E93B0)) { (ctx as? Activity)?.finish() }
         }
     }
 }
@@ -74,6 +67,6 @@ fun ChunkyButton(label: String, bg: Color, border: Color, onClick: () -> Unit) {
             .background(bg, RoundedCornerShape(16.dp))
             .border(3.dp, border, RoundedCornerShape(16.dp))
             .clickable(onClick = onClick)
-            .padding(horizontal = 22.dp, vertical = 12.dp)
-    ) { Text(label, color = Pal.HudBrown, fontWeight = FontWeight.ExtraBold, fontSize = 17.sp) }
+            .padding(horizontal = 20.dp, vertical = 12.dp)
+    ) { Text(label, color = Pal.HudBrown, fontWeight = FontWeight.ExtraBold, fontSize = 16.sp) }
 }

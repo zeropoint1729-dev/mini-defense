@@ -49,35 +49,66 @@ class Pop(var x: Float, var y: Float, var t: Float)
 
 object MapData {
     const val WORLD_H = 1.15f
-    val PATH = listOf(
-        0.50f to -0.05f, 0.50f to 0.16f, 0.18f to 0.20f, 0.18f to 0.50f,
-        0.82f to 0.54f, 0.82f to 0.82f, 0.40f to 0.86f, 0.40f to 1.06f
-    )
-    val SPOTS = listOf(
-        0.33f to 0.07f, 0.70f to 0.10f, 0.50f to 0.36f,
-        0.55f to 0.68f, 0.18f to 0.68f, 0.63f to 0.94f
-    )
+}
+
+class LevelData(
+    val path: List<Pair<Float, Float>>,
+    val spots: List<Pair<Float, Float>>,
+    val base: Pair<Float, Float>,
+    val diff: Float
+) {
     private val lens: List<Float>
-    val TOTAL: Float
+    val total: Float
     init {
         var acc = 0f
-        lens = PATH.zipWithNext { a, b ->
+        lens = path.zipWithNext { a, b ->
             val l = sqrt((b.first - a.first) * (b.first - a.first) + (b.second - a.second) * (b.second - a.second))
             acc += l; l
         }
-        TOTAL = acc
+        total = acc
     }
     fun pointAt(dist: Float): Pair<Float, Float> {
         var d = dist
         for (i in lens.indices) {
             val l = lens[i]
             if (d <= l) {
-                val a = PATH[i]; val b = PATH[i + 1]
+                val a = path[i]; val b = path[i + 1]
                 val t = if (l == 0f) 0f else d / l
                 return (a.first + (b.first - a.first) * t) to (a.second + (b.second - a.second) * t)
             }
             d -= l
         }
-        return PATH.last()
+        return path.last()
+    }
+}
+
+object Levels {
+    private val A = LevelData(
+        listOf(
+            0.50f to -0.05f, 0.50f to 0.16f, 0.18f to 0.20f, 0.18f to 0.50f,
+            0.82f to 0.54f, 0.82f to 0.82f, 0.40f to 0.86f, 0.40f to 1.06f
+        ),
+        listOf(0.33f to 0.07f, 0.70f to 0.10f, 0.50f to 0.36f, 0.55f to 0.68f, 0.18f to 0.68f, 0.63f to 0.94f),
+        0.40f to 1.00f, 1f
+    )
+    private val B = LevelData(
+        listOf(
+            0.50f to -0.05f, 0.50f to 0.12f, 0.85f to 0.16f, 0.85f to 0.42f,
+            0.15f to 0.46f, 0.15f to 0.72f, 0.60f to 0.76f, 0.60f to 1.06f
+        ),
+        listOf(0.32f to 0.06f, 0.68f to 0.30f, 0.32f to 0.30f, 0.35f to 0.60f, 0.80f to 0.60f, 0.80f to 0.90f),
+        0.60f to 1.00f, 1f
+    )
+    private val C = LevelData(
+        listOf(
+            0.20f to -0.05f, 0.20f to 0.20f, 0.80f to 0.24f, 0.80f to 0.50f,
+            0.20f to 0.54f, 0.20f to 0.80f, 0.80f to 0.84f, 0.80f to 1.06f
+        ),
+        listOf(0.40f to 0.10f, 0.50f to 0.36f, 0.50f to 0.66f, 0.40f to 0.95f, 0.06f to 0.66f, 0.94f to 0.36f),
+        0.80f to 1.00f, 1f
+    )
+    val ALL: List<LevelData> = (0 until 10).map { i ->
+        val src = listOf(A, B, C)[i % 3]
+        LevelData(src.path, src.spots, src.base, 1f + i * 0.22f)
     }
 }
