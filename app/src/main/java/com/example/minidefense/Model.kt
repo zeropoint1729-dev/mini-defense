@@ -16,7 +16,7 @@ class Tower(val type: TowerType, val x: Float, val y: Float, val spot: Int) {
     var level = 1
     var cooldown = 0f
     var invested = type.cost
-    val damage get() = type.damage * pow(1.35, (level - 1).toDouble()).toFloat()
+    val damage get() = type.damage * 1.35.pow(level - 1).toFloat()
     val range get() = type.range * (1f + 0.10f * (level - 1))
     val upgradeCost get() = (type.cost * 0.8 * level).toInt()
     val sellValue get() = (invested * 0.7).toInt()
