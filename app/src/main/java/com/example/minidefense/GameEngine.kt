@@ -1,6 +1,9 @@
 package com.example.minidefense
 
+import kotlin.math.cos
+import kotlin.math.sin
 import kotlin.math.sqrt
+import kotlin.random.Random
 
 class GameEngine(val levelIdx: Int = 0) {
     val level = Levels.ALL[levelIdx]
@@ -20,6 +23,7 @@ class GameEngine(val levelIdx: Int = 0) {
     val enemies = mutableListOf<Enemy>()
     val shots = mutableListOf<Projectile>()
     val pops = mutableListOf<Pop>()
+    val parts = mutableListOf<Particle>()
     private val queue = mutableListOf<Pair<Float, Int>>()
 
     fun betweenWaves() = queue.isEmpty() && enemies.isEmpty() && status == 0 && wave < totalWaves
@@ -50,6 +54,7 @@ class GameEngine(val levelIdx: Int = 0) {
             e.dist += e.speed * dt
             if (e.dist >= level.total) {
                 it.remove(); lives--
+                burst(level.base.first, level.base.second, Pal.Danger, 8)
                 onSfx("leak")
                 if (lives <= 0) { status = 2; onSfx("lose") }
                 continue
@@ -63,6 +68,7 @@ class GameEngine(val levelIdx: Int = 0) {
                 val target = enemies.filter { hyp(it.x - t.x, it.y - t.y) <= t.range }.maxByOrNull { it.dist }
                 if (target != null) {
                     shots.add(Projectile(target, t))
+                    if (t.type == TowerType.ARROW && t.level >= 3) shots.add(Projectile(target, t))
                     t.cooldown = 1f / t.type.rate
                     onSfx("shoot")
                 }
@@ -83,23 +89,43 @@ class GameEngine(val levelIdx: Int = 0) {
         }
         val pp = pops.iterator()
         while (pp.hasNext()) { val p = pp.next(); p.t -= dt; if (p.t <= 0) pp.remove() }
+        val pt = parts.iterator()
+        while (pt.hasNext()) {
+            val p = pt.next()
+            p.x += p.vx * dt; p.y += p.vy * dt; p.vy += 1.2f * dt; p.t -= dt
+            if (p.t <= 0) pt.remove()
+        }
+    }
+
+    fun burst(x: Float, y: Float, color: androidx.compose.ui.graphics.Color, n: Int) {
+        for (i in 0 until n) {
+            val ang = Random.nextFloat() * 6.283f
+            val sp = 0.12f + Random.nextFloat() * 0.22f
+            parts.add(Particle(x, y, cos(ang) * sp, sin(ang) * sp - 0.12f, 0.45f, color))
+        }
     }
 
     private fun hit(e: Enemy, t: Tower) {
-        if (t.type.slow > 0) e.slow = t.type.slow
+        if (t.type == TowerType.ICE) {
+            e.slow = if (t.level >= 3) 2.2f else 1.5f
+            e.slowMul = if (t.level >= 3) 0.3f else 0.5f
+        }
         damage(e, t.damage)
         if (t.type.splash > 0) {
-            for (o in enemies.toList()) if (o !== e && hyp(o.x - e.x, o.y - e.y) <= t.type.splash) damage(o, t.damage * 0.6f)
+            val r = t.type.splash * (if (t.level >= 3) 1.5f else 1f)
+            burst(e.x, e.y, Pal.Secondary, 8)
+            for (o in enemies.toList()) if (o !== e && hyp(o.x - e.x, o.y - e.y) <= r) damage(o, t.damage * 0.6f)
         }
     }
 
     private fun damage(e: Enemy, amount: Float) {
         if (e.hp <= 0) return
-        e.hp -= amount
+        e.hp -= maxOf(1f, amount - Enemy.ARMOR[e.kind])
         if (e.hp <= 0) {
             enemies.remove(e)
             coins += e.reward
             pops.add(Pop(e.x, e.y, 0.3f))
+            burst(e.x, e.y, e.color, 6)
             onSfx("pop")
         }
     }
@@ -109,17 +135,27 @@ class GameEngine(val levelIdx: Int = 0) {
         waveGap = 3f
         var t = time + 0.5f
         val count = 5 + n * 2
+        val tier = levelIdx / 3
         for (i in 0 until count) {
-            val kind = when {
-                n >= 10 && i == count - 1 -> 3
-                n >= 4 && i % 5 == 4 -> 2
-                n >= 2 && i % 3 == 2 -> 1
-                else -> 0
-            }
+            val kind = pickKind(n, i, tier, count)
             queue.add(t to kind)
-            t += 0.75f
+            t += if (kind == 4) 0.45f else 0.75f
         }
         onSfx("wave")
+    }
+
+    private fun pickKind(n: Int, i: Int, tier: Int, count: Int): Int {
+        if (n == totalWaves && i == count - 1) return 3
+        val r = (i * 31 + n * 17 + levelIdx * 7) % 10
+        return when {
+            tier >= 2 && r == 0 -> 5
+            tier >= 1 && r == 1 -> 2
+            tier >= 0 && r == 2 && n >= 2 -> 1
+            r == 3 || r == 4 -> 4
+            tier >= 2 && r == 5 -> 5
+            tier >= 1 && r == 6 -> 2
+            else -> 0
+        }
     }
 
     fun callNextWave(): Boolean {
@@ -134,6 +170,7 @@ class GameEngine(val levelIdx: Int = 0) {
         val s = level.spots[spot]
         towers.add(Tower(type, s.first, s.second, spot))
         coins -= type.cost
+        burst(s.first, s.second, Pal.White, 5)
         onSfx("place")
         return true
     }
@@ -142,13 +179,18 @@ class GameEngine(val levelIdx: Int = 0) {
 
     fun upgrade(t: Tower) {
         val c = t.upgradeCost
-        if (coins >= c) { coins -= c; t.level++; t.invested += c; onSfx("place") }
+        if (coins >= c) {
+            coins -= c; t.level++; t.invested += c
+            burst(t.x, t.y, Pal.Primary, 6)
+            onSfx("place")
+        }
     }
 
     fun sell(t: Tower) {
         coins += t.sellValue
         towers.remove(t)
         selectedSpot = -1
+        burst(t.x, t.y, Pal.TanDark, 5)
         onSfx("pop")
     }
 

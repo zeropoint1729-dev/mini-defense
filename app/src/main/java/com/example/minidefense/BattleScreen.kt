@@ -42,7 +42,7 @@ fun BattleScreen(levelIdx: Int, onMenu: () -> Unit) {
     var engine by remember { mutableStateOf(GameEngine(levelIdx)) }
     var frame by remember { mutableStateOf(0) }
     LaunchedEffect(engine) {
-        engine.onSfx = { name -> if (Save.sound) Sfx.play(name) }
+        engine.onSfx = { name -> if (Save.sound) Sfx.play(name); Haptics.buzz(name) }
         var last = System.nanoTime()
         while (true) {
             delay(16)
@@ -175,7 +175,7 @@ fun TowerPopup(e: GameEngine) {
     ) {
         Column(Modifier.weight(1f)) {
             Text("${t.type.label} Lv.${t.level}", color = Pal.HudBrown, fontWeight = FontWeight.ExtraBold, fontSize = 15.sp)
-            Text("DMG ${t.damage.toInt()}   RNG ${t.range}", color = Pal.HudBrown.copy(alpha = 0.7f), fontSize = 12.sp)
+            Text("DMG ${t.damage.toInt()}  RNG ${t.range}" + (if (t.level >= 3) "  ★${t.type.trait}" else ""), color = Pal.HudBrown.copy(alpha = 0.7f), fontSize = 12.sp)
         }
         CartoonButton("Up ◉${t.upgradeCost}", enabled = e.coins >= t.upgradeCost) { e.upgrade(t) }
         Spacer(Modifier.width(8.dp))

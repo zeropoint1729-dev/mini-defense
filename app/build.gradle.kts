@@ -6,14 +6,14 @@ plugins {
 
 android {
     namespace = "com.example.minidefense"
-    compileSdk = 34
+    compileSdk = 35
 
     defaultConfig {
         applicationId = "com.example.minidefense"
         minSdk = 24
-        targetSdk = 34
-        versionCode = 3
-        versionName = "0.3.0"
+        targetSdk = 35
+        versionCode = 4
+        versionName = "0.4.0"
     }
 
     signingConfigs {

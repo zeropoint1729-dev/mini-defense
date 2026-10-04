@@ -93,13 +93,43 @@ fun GameCanvas(engine: GameEngine, onTap: (Float, Float) -> Unit, modifier: Modi
             for (i in 0 until t.level - 1) {
                 drawCircle(Pal.Primary, radius = 0.008f * sc, center = Offset(cx - 0.02f * sc + i * 0.016f * sc, cy + 0.065f * sc))
             }
+            if (t.level >= 3) {
+                drawCircle(Pal.Secondary, radius = 0.010f * sc, center = Offset(cx + 0.030f * sc, cy + 0.065f * sc))
+            }
         }
 
         for (e in engine.enemies) {
             val r = e.radius * sc
             val wob = sin(engine.time * 8f + e.dist * 30f) * 0.08f
             val cx = px(e.x); val cy = py(e.y)
+            if (e.kind == 4) {
+                for (k in 0..1) {
+                    drawLine(
+                        Color.White.copy(alpha = 0.6f),
+                        Offset(cx - r * 1.6f, cy - r * 0.3f + k * r * 0.6f),
+                        Offset(cx - r * 2.3f, cy - r * 0.3f + k * r * 0.6f),
+                        r * 0.12f, cap = StrokeCap.Round
+                    )
+                }
+            }
             cartoonBlob(this, cx, cy, r, e.color, Enemy.OUTLINES[e.kind], wob)
+            if (e.kind == 5) {
+                drawArc(Pal.Metal, 180f, 180f, false, topLeft = Offset(cx - r * 0.85f, cy - r * 1.02f), size = Size(r * 1.7f, r * 1.1f), style = Stroke(r * 0.28f))
+                drawCircle(Pal.Outline, r * 0.10f, Offset(cx, cy - r * 1.05f))
+            }
+            if (e.kind == 3) {
+                val cr = Path()
+                cr.moveTo(cx - r * 0.6f, cy - r * 1.0f)
+                cr.lineTo(cx - r * 0.6f, cy - r * 1.5f)
+                cr.lineTo(cx - r * 0.3f, cy - r * 1.15f)
+                cr.lineTo(cx, cy - r * 1.6f)
+                cr.lineTo(cx + r * 0.3f, cy - r * 1.15f)
+                cr.lineTo(cx + r * 0.6f, cy - r * 1.5f)
+                cr.lineTo(cx + r * 0.6f, cy - r * 1.0f)
+                cr.close()
+                drawPath(cr, Pal.Primary)
+                drawPath(cr, Pal.Outline, style = Stroke(r * 0.08f))
+            }
             if (e.slow > 0) drawCircle(Pal.IceDark.copy(alpha = 0.6f), r * 1.3f, Offset(cx, cy), style = Stroke(0.006f * sc))
             if (e.hp < e.hpMax) {
                 drawRoundRect(Pal.HudBrown.copy(alpha = 0.5f), topLeft = Offset(cx - r, cy - r - 0.024f * sc), size = Size(r * 2, 0.014f * sc), cornerRadius = CornerRadius(0.007f * sc))
@@ -128,6 +158,11 @@ fun GameCanvas(engine: GameEngine, onTap: (Float, Float) -> Unit, modifier: Modi
         for (pp in engine.pops) {
             val k = 1f - pp.t / 0.3f
             drawCircle(Color.White.copy(alpha = pp.t / 0.3f), radius = (0.02f + k * 0.05f) * sc, center = Offset(px(pp.x), py(pp.y)), style = Stroke(0.008f * sc))
+        }
+
+        for (pt in engine.parts) {
+            val a = pt.t / 0.45f
+            drawCircle(pt.color.copy(alpha = a), radius = (0.004f + 0.010f * a) * sc, center = Offset(px(pt.x), py(pt.y)))
         }
     }
 }

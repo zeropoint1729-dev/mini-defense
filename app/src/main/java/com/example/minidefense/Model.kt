@@ -10,6 +10,12 @@ enum class TowerType(val cost: Int, val range: Float, val damage: Float, val rat
     ICE(60, 0.16f, 6f, 1.2f, "Ice");
     val splash: Float get() = if (this == CANNON) 0.07f else 0f
     val slow: Float get() = if (this == ICE) 1.5f else 0f
+    val trait: String
+        get() = when (this) {
+            ARROW -> "Double Shot"
+            CANNON -> "Mega Splash"
+            ICE -> "Freeze Sting"
+        }
 }
 
 class Tower(val type: TowerType, val x: Float, val y: Float, val spot: Int) {
@@ -26,18 +32,27 @@ class Enemy(val kind: Int, val hpMax: Float) {
     var hp = hpMax
     var dist = 0f
     var slow = 0f
+    var slowMul = 0.5f
     var x = 0f; var y = 0f
-    val speed get() = BASE_SPEED[kind] * (if (slow > 0) 0.5f else 1f)
+    val speed get() = BASE_SPEED[kind] * (if (slow > 0) slowMul else 1f)
     val reward get() = REWARD[kind]
     val radius get() = RADIUS[kind]
     val color get() = COLORS[kind]
     companion object {
-        val BASE_SPEED = floatArrayOf(0.075f, 0.06f, 0.045f, 0.032f)
-        val REWARD = intArrayOf(8, 10, 14, 60)
-        val RADIUS = floatArrayOf(0.030f, 0.032f, 0.036f, 0.050f)
-        val BASE_HP = floatArrayOf(40f, 75f, 130f, 650f)
-        val COLORS = listOf(Color(0xFFFFD93D), Color(0xFFFF6B6B), Color(0xFF8ECDE8), Color(0xFFFF8FAB))
-        val OUTLINES = listOf(Color(0xFFC9A227), Color(0xFFC94C4C), Color(0xFF5E93B0), Color(0xFFD96A8A))
+        // 0 yellow, 1 red, 2 blue tank, 3 boss, 4 swift, 5 armored
+        val BASE_SPEED = floatArrayOf(0.075f, 0.06f, 0.045f, 0.032f, 0.11f, 0.04f)
+        val REWARD = intArrayOf(8, 10, 14, 60, 6, 16)
+        val RADIUS = floatArrayOf(0.030f, 0.032f, 0.036f, 0.050f, 0.024f, 0.034f)
+        val BASE_HP = floatArrayOf(40f, 75f, 130f, 650f, 28f, 110f)
+        val ARMOR = floatArrayOf(0f, 0f, 0f, 0f, 0f, 4f)
+        val COLORS = listOf(
+            Color(0xFFFFD93D), Color(0xFFFF6B6B), Color(0xFF8ECDE8),
+            Color(0xFFFF8FAB), Color(0xFFB5E48C), Color(0xFF9575CD)
+        )
+        val OUTLINES = listOf(
+            Color(0xFFC9A227), Color(0xFFC94C4C), Color(0xFF5E93B0),
+            Color(0xFFD96A8A), Color(0xFF7CB342), Color(0xFF5E35B1)
+        )
     }
 }
 
@@ -46,6 +61,8 @@ class Projectile(val target: Enemy, val tower: Tower) {
 }
 
 class Pop(var x: Float, var y: Float, var t: Float)
+
+class Particle(var x: Float, var y: Float, var vx: Float, var vy: Float, var t: Float, val color: Color)
 
 object MapData {
     const val WORLD_H = 1.15f

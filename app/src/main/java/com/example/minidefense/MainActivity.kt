@@ -14,6 +14,7 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         Save.init(this)
         Sfx.init()
+        Haptics.init(this)
         setContent {
             var screen by remember { mutableStateOf(0) }
             var level by remember { mutableStateOf(0) }
