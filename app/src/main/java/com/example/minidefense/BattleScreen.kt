@@ -6,9 +6,11 @@ import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -27,18 +29,13 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
-import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.Path
-import androidx.compose.ui.graphics.StrokeCap
+import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import kotlinx.coroutines.delay
-import kotlin.math.PI
-import kotlin.math.cos
 import kotlin.math.hypot
-import kotlin.math.sin
 
 @Composable
 fun BattleScreen(onMenu: () -> Unit) {
@@ -62,9 +59,10 @@ fun BattleScreen(onMenu: () -> Unit) {
             if (engine.betweenWaves()) {
                 Text(
                     "Wave ${engine.wave + 1} in ${(engine.waveGap + 0.999f).toInt()}s",
-                    color = Pal.Ink, fontWeight = FontWeight.Bold, fontSize = 16.sp,
+                    color = Pal.HudBrown, fontWeight = FontWeight.ExtraBold, fontSize = 15.sp,
                     modifier = Modifier.align(Alignment.TopCenter).padding(8.dp)
-                        .background(Pal.Panel, RoundedCornerShape(16.dp)).padding(horizontal = 14.dp, vertical = 6.dp)
+                        .background(Pal.White, RoundedCornerShape(50)).border(2.dp, Pal.Outline, RoundedCornerShape(50))
+                        .padding(horizontal = 14.dp, vertical = 6.dp)
                 )
             }
             if (engine.paused && engine.status == 0) OverlayCard("Paused") {
@@ -103,22 +101,64 @@ fun tapGame(e: GameEngine, x: Float, y: Float) {
 @Composable
 fun HudBar(e: GameEngine) {
     Row(
-        Modifier.fillMaxWidth().background(Pal.Panel).padding(horizontal = 12.dp, vertical = 8.dp),
+        Modifier.fillMaxWidth().background(Pal.Grass).padding(horizontal = 10.dp, vertical = 8.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        Text("♥ ${e.lives}", color = Pal.Danger, fontWeight = FontWeight.ExtraBold, fontSize = 18.sp)
-        Spacer(Modifier.width(14.dp))
-        Text("◉ ${e.coins}", color = Pal.Secondary, fontWeight = FontWeight.ExtraBold, fontSize = 18.sp)
-        Spacer(Modifier.weight(1f))
-        Text("Wave ${e.wave}/${e.totalWaves}", color = Pal.Ink, fontWeight = FontWeight.Bold, fontSize = 16.sp)
-        Spacer(Modifier.width(10.dp))
-        Box(Modifier.size(34.dp).background(Pal.Bg, RoundedCornerShape(10.dp)).clickable { e.paused = !e.paused }, contentAlignment = Alignment.Center) {
-            Text(if (e.paused) "▶" else "II", color = Pal.Ink, fontSize = 14.sp, fontWeight = FontWeight.Bold)
+        Pill {
+            HeartIcon()
+            Text("${e.lives}", color = Pal.White, fontWeight = FontWeight.ExtraBold, fontSize = 15.sp)
         }
         Spacer(Modifier.width(8.dp))
-        Box(Modifier.size(34.dp).background(Pal.Bg, RoundedCornerShape(10.dp)).clickable { e.speed = if (e.speed == 1) 2 else 1 }, contentAlignment = Alignment.Center) {
-            Text("»${e.speed}", color = Pal.Ink, fontSize = 14.sp, fontWeight = FontWeight.Bold)
+        Pill {
+            CoinIcon()
+            Text("${e.coins}", color = Pal.White, fontWeight = FontWeight.ExtraBold, fontSize = 15.sp)
         }
+        Spacer(Modifier.weight(1f))
+        Text("Wave ${e.wave}/${e.totalWaves}", color = Pal.HudBrown, fontWeight = FontWeight.ExtraBold, fontSize = 16.sp)
+        Spacer(Modifier.width(8.dp))
+        CircleButton(onClick = { e.paused = !e.paused }) {
+            Text(if (e.paused) "▶" else "❚❚", color = Pal.HudBrown, fontSize = 12.sp, fontWeight = FontWeight.ExtraBold)
+        }
+        Spacer(Modifier.width(8.dp))
+        CircleButton(onClick = { e.speed = if (e.speed == 1) 2 else 1 }) {
+            Text("»${e.speed}", color = Pal.HudBrown, fontSize = 13.sp, fontWeight = FontWeight.ExtraBold)
+        }
+    }
+}
+
+@Composable
+fun Pill(content: @Composable RowScope.() -> Unit) {
+    Row(
+        Modifier.background(Pal.HudBrown, RoundedCornerShape(50)).padding(horizontal = 10.dp, vertical = 5.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(6.dp)
+    ) { content() }
+}
+
+@Composable
+fun CircleButton(onClick: () -> Unit, content: @Composable BoxScope.() -> Unit) {
+    Box(
+        Modifier.size(36.dp)
+            .background(Pal.White, RoundedCornerShape(50))
+            .border(2.dp, Pal.HudBrown, RoundedCornerShape(50))
+            .clickable(onClick = onClick),
+        contentAlignment = Alignment.Center
+    ) { content() }
+}
+
+@Composable
+fun HeartIcon() {
+    Canvas(Modifier.size(16.dp)) {
+        drawHeart(this, size.width / 2, size.height / 2, size.minDimension * 0.30f, Pal.Danger)
+    }
+}
+
+@Composable
+fun CoinIcon() {
+    Canvas(Modifier.size(16.dp)) {
+        drawCircle(Pal.Primary, radius = size.minDimension * 0.5f)
+        drawCircle(Pal.Secondary, radius = size.minDimension * 0.44f, style = Stroke(size.minDimension * 0.12f))
+        drawCircle(Pal.Secondary, radius = size.minDimension * 0.18f)
     }
 }
 
@@ -126,12 +166,12 @@ fun HudBar(e: GameEngine) {
 fun TowerPopup(e: GameEngine) {
     val t = e.towerAt(e.selectedSpot) ?: return
     Row(
-        Modifier.fillMaxWidth().background(Pal.Bg).padding(horizontal = 12.dp, vertical = 6.dp),
+        Modifier.fillMaxWidth().background(Pal.Panel).padding(horizontal = 12.dp, vertical = 6.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
         Column(Modifier.weight(1f)) {
-            Text("${t.type.label} Lv.${t.level}", color = Pal.Ink, fontWeight = FontWeight.ExtraBold, fontSize = 15.sp)
-            Text("DMG ${t.damage.toInt()}   RNG ${t.range}", color = Pal.Ink.copy(alpha = 0.7f), fontSize = 12.sp)
+            Text("${t.type.label} Lv.${t.level}", color = Pal.HudBrown, fontWeight = FontWeight.ExtraBold, fontSize = 15.sp)
+            Text("DMG ${t.damage.toInt()}   RNG ${t.range}", color = Pal.HudBrown.copy(alpha = 0.7f), fontSize = 12.sp)
         }
         CartoonButton("Up ◉${t.upgradeCost}", enabled = e.coins >= t.upgradeCost) { e.upgrade(t) }
         Spacer(Modifier.width(8.dp))
@@ -142,68 +182,50 @@ fun TowerPopup(e: GameEngine) {
 @Composable
 fun TowerBar(e: GameEngine) {
     Row(
-        Modifier.fillMaxWidth().background(Pal.Panel).padding(10.dp),
-        horizontalArrangement = Arrangement.spacedBy(10.dp)
+        Modifier.fillMaxWidth().background(Pal.Grass).padding(horizontal = 8.dp, vertical = 8.dp),
+        horizontalArrangement = Arrangement.spacedBy(8.dp)
     ) {
         TowerType.entries.forEach { t ->
             val sel = e.placing == t
             val afford = e.coins >= t.cost
             Column(
                 Modifier.weight(1f)
-                    .alpha(if (afford || sel) 1f else 0.45f)
-                    .background(if (sel) Pal.Primary else Pal.Bg, RoundedCornerShape(18.dp))
-                    .border(2.dp, if (sel) Pal.Secondary else Color.Transparent, RoundedCornerShape(18.dp))
+                    .alpha(if (afford || sel) 1f else 0.5f)
+                    .background(if (sel) Color(0xFFFFF3C4) else Pal.White, RoundedCornerShape(14.dp))
+                    .border(2.dp, Pal.Outline, RoundedCornerShape(14.dp))
                     .clickable { if (afford || sel) { e.placing = if (sel) null else t; e.selectedSpot = -1 } }
-                    .padding(8.dp),
+                    .padding(6.dp),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
                 TowerIcon(t)
-                Text(t.label, color = Pal.Ink, fontWeight = FontWeight.Bold, fontSize = 13.sp)
-                Text("◉${t.cost}", color = if (afford) Pal.Secondary else Pal.Danger, fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                Text(t.label.uppercase(), color = Pal.HudBrown, fontWeight = FontWeight.ExtraBold, fontSize = 11.sp)
+                Text("◉${t.cost}", color = if (afford) Pal.Secondary else Pal.Danger, fontSize = 11.sp, fontWeight = FontWeight.Bold)
             }
         }
         Column(
             Modifier.weight(1f)
-                .alpha(if (e.betweenWaves()) 1f else 0.45f)
-                .background(Pal.Bg, RoundedCornerShape(18.dp))
+                .alpha(if (e.betweenWaves()) 1f else 0.5f)
+                .background(Pal.White, RoundedCornerShape(14.dp))
+                .border(2.dp, Pal.Outline, RoundedCornerShape(14.dp))
                 .clickable { e.callNextWave() }
-                .padding(8.dp),
+                .padding(6.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            Text("▶▶", color = Pal.Success, fontWeight = FontWeight.ExtraBold, fontSize = 16.sp)
-            Text("Next", color = Pal.Ink, fontWeight = FontWeight.Bold, fontSize = 13.sp)
-            Text("+◉${10 + e.wave}", color = Pal.Success, fontSize = 12.sp, fontWeight = FontWeight.Bold)
+            Text("▶▶", color = Pal.Success, fontWeight = FontWeight.ExtraBold, fontSize = 18.sp)
+            Text("NEXT", color = Pal.HudBrown, fontWeight = FontWeight.ExtraBold, fontSize = 11.sp)
+            Text("+◉${10 + e.wave}", color = Pal.Success, fontSize = 11.sp, fontWeight = FontWeight.Bold)
         }
     }
 }
 
 @Composable
 fun TowerIcon(t: TowerType) {
-    Canvas(Modifier.size(30.dp)) {
-        val c = size.minDimension / 2
-        val cx = size.width / 2; val cy = size.height / 2
+    Canvas(Modifier.size(34.dp)) {
+        val s = size.minDimension * 7f
         when (t) {
-            TowerType.ARROW -> {
-                drawLine(Pal.Secondary, Offset(cx, cy + c * 0.7f), Offset(cx, cy - c * 0.4f), strokeWidth = 3f)
-                val p = Path()
-                p.moveTo(cx, cy - c * 0.8f); p.lineTo(cx - c * 0.35f, cy - c * 0.15f); p.lineTo(cx + c * 0.35f, cy - c * 0.15f); p.close()
-                drawPath(p, Pal.Secondary)
-            }
-            TowerType.CANNON -> {
-                drawCircle(Color(0xFF8D6E63), c * 0.55f, Offset(cx, cy + c * 0.25f))
-                drawLine(Color(0xFF546E7A), Offset(cx, cy + c * 0.2f), Offset(cx + c * 0.6f, cy - c * 0.55f), strokeWidth = 5f, cap = StrokeCap.Round)
-            }
-            TowerType.ICE -> {
-                for (a in 0..2) {
-                    val ang = (a * 60 + 90) * PI / 180
-                    drawLine(
-                        Color(0xFF4FC3F7),
-                        Offset(cx - cos(ang).toFloat() * c * 0.8f, cy - sin(ang).toFloat() * c * 0.8f),
-                        Offset(cx + cos(ang).toFloat() * c * 0.8f, cy + sin(ang).toFloat() * c * 0.8f),
-                        strokeWidth = 3f
-                    )
-                }
-            }
+            TowerType.ARROW -> cartoonCastle(this, size.width / 2, size.height * 0.60f, s, Pal.Tan, Pal.Roof, false)
+            TowerType.CANNON -> cartoonCannon(this, size.width / 2, size.height * 0.55f, s)
+            TowerType.ICE -> cartoonCastle(this, size.width / 2, size.height * 0.60f, s, Pal.IceBody, Pal.Roof, true)
         }
     }
 }
@@ -214,20 +236,21 @@ fun CartoonButton(text: String, enabled: Boolean = true, color: Color = Pal.Prim
         Modifier
             .alpha(if (enabled) 1f else 0.4f)
             .background(color, RoundedCornerShape(24.dp))
+            .border(2.dp, Pal.Outline, RoundedCornerShape(24.dp))
             .then(if (enabled) Modifier.clickable { onClick() } else Modifier)
-            .padding(horizontal = 18.dp, vertical = 10.dp),
+            .padding(horizontal = 16.dp, vertical = 8.dp),
         contentAlignment = Alignment.Center
-    ) { Text(text, color = Pal.Ink, fontWeight = FontWeight.ExtraBold, fontSize = 16.sp) }
+    ) { Text(text, color = Pal.HudBrown, fontWeight = FontWeight.ExtraBold, fontSize = 15.sp) }
 }
 
 @Composable
 fun OverlayCard(title: String, content: @Composable ColumnScope.() -> Unit) {
     Box(Modifier.fillMaxSize().background(Pal.Ink.copy(alpha = 0.45f)), contentAlignment = Alignment.Center) {
         Column(
-            Modifier.background(Pal.Bg, RoundedCornerShape(28.dp)).padding(24.dp),
+            Modifier.background(Pal.Bg, RoundedCornerShape(28.dp)).border(3.dp, Pal.Outline, RoundedCornerShape(28.dp)).padding(24.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            Text(title, fontSize = 28.sp, fontWeight = FontWeight.ExtraBold, color = Pal.Ink)
+            Text(title, fontSize = 28.sp, fontWeight = FontWeight.ExtraBold, color = Pal.HudBrown)
             Spacer(Modifier.height(14.dp))
             content()
         }

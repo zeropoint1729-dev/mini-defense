@@ -37,6 +37,7 @@ class Enemy(val kind: Int, val hpMax: Float) {
         val RADIUS = floatArrayOf(0.030f, 0.032f, 0.036f, 0.050f)
         val BASE_HP = floatArrayOf(40f, 75f, 130f, 650f)
         val COLORS = listOf(Color(0xFFFFD93D), Color(0xFFFF6B6B), Color(0xFF8ECDE8), Color(0xFFFF8FAB))
+        val OUTLINES = listOf(Color(0xFFC9A227), Color(0xFFC94C4C), Color(0xFF5E93B0), Color(0xFFD96A8A))
     }
 }
 
